@@ -24,6 +24,7 @@ app.post('/signin', insert.signin);
 app.post('/mailersend',insert.mailersend);
 app.post('/getDashboard',insert.getDashboard);
 app.post('/getDashboardDetails',insert.getDashboardDetails);
+app.post('/api/sensor-data', insert.receiveSensorData);
 
 
 app.get('/fetchall', fetch.fetchall)   // nosql

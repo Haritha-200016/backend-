@@ -414,8 +414,59 @@ module.exports  = {
             });
         }
     },
+
+
+
+        receiveSensorData: (req, res) => {
+    const { temperature, humidity, air_quality, mq7_co, dust } = req.body;
+
+    // Step 1: Validate input
+    if (
+        temperature === undefined ||
+        humidity === undefined ||
+        air_quality === undefined ||
+        mq7_co ===undefined ||
+        dust ===undefined
+    ) {
+        console.log("❌ Invalid or incomplete sensor data received");
+        return res.status(400).json({ error: "Missing sensor data" });
+    }
+
+    try {
+        // Step 2: Display in backend console first
+        console.log("📥 Sensor Data Received:");
+        console.log("🌡️ Temperature:", temperature);
+        console.log("💧 Humidity:", humidity);
+        console.log("🪫 co2:", air_quality);
+        console.log("co :",mq7_co);
+        console.log("dust :",dust);
+
+        // Step 3: If print successful, then insert into SQL
+        const insertQuery = `
+            INSERT INTO env_monitoring (temperature, humidity, co2_ppm, co_ppm, dust, timestamp)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        `;
+
+        db.query(insertQuery, [temperature, humidity, air_quality, mq7_co, dust], (err, result) => {
+            if (err) {
+                console.error("❌ Error inserting into MariaDB:", err);
+                return res.status(500).json({ error: "SQL insert failed" });
+            }
+
+            console.log("✅ Sensor data inserted into SQL with ID:", result.insertId);
+            return res.status(201).json({
+                message: "Sensor data displayed and stored successfully",
+                id: result.insertId
+            });
+        });
+
+    } catch (err) {
+        console.error("❌ Backend error:", err);
+        return res.status(500).json({ error: "Unexpected backend error" });
+    }
+}
+
     
 
     
 }
- 
