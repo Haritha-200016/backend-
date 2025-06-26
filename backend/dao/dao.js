@@ -1,16 +1,24 @@
 const mysql = require('mysql');
 const config = require('../config/dbconfig'); // Import database config
 
-// Create a single database connection
-const db = mysql.createConnection(config);
-
-// Connect to MySQL
-db.connect((err) => {
-    if (err) {
-        console.error("Database connection failed:", err.stack);
-        return;
-    }
-    console.log("Connected to MySQL Database with ID:", db.threadId);
+// Create a MySQL connection pool
+const pool = mysql.createPool({
+    connectionLimit: 10, // You can adjust this number
+    host: config.host,
+    user: config.user,
+    password: config.password,
+    database: config.database,
+    port: config.port
 });
 
-module.exports = db; // Export the database connection
+// Test the pool connection
+pool.getConnection((err, connection) => {
+    if (err) {
+        console.error("Database connection pool failed:", err.stack);
+        return;
+    }
+    console.log("Connected to MySQL Database with thread ID:", connection.threadId);
+    connection.release(); // Always release the connection back to pool
+});
+
+module.exports = pool;
