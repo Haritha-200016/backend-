@@ -79,4 +79,4 @@ app.post('/submit', (req, res) => {
 
 // Start server
 //app.listen(80, () => console.log('🌐 Server running on http://localhost:3001'));
-app.listen(80, '0.0.0.0', () => console.log('🌐 Server running on http://<your-ip>:3001'));
+app.listen(80, '0.0.0.0', () => console.log('🌐 Server running on http://<your-ip>:80'));
