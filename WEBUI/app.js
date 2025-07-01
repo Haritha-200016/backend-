@@ -1,12 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
+const path = require('path');
+
 const app = express();
 
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public')); // serves form.html
+app.use(express.static(path.join(__dirname, 'public'))); // Serve form.html from /public
 
-// Database connection
+// MariaDB connection
 const db = mysql.createConnection({
   host: '104.154.141.198',
   user: 'root',
@@ -15,19 +18,25 @@ const db = mysql.createConnection({
 });
 
 db.connect(err => {
-  if (err) throw err;
+  if (err) {
+    console.error('❌ Database connection failed:', err.message);
+    process.exit(1); // Exit if DB connection fails
+  }
   console.log('✅ Connected to MariaDB');
 });
 
-// Endpoint to get sector names
+// API: Get all sector names
 app.get('/sectors', (req, res) => {
   db.query('SELECT sector_name FROM sector', (err, results) => {
-    if (err) return res.status(500).send('Error fetching sectors');
+    if (err) {
+      console.error('❌ Error fetching sectors:', err.message);
+      return res.status(500).send('Error fetching sectors');
+    }
     res.json(results);
   });
 });
 
-// Submit form — insert company and device
+// API: Handle form submission
 app.post('/submit', (req, res) => {
   const {
     company_name, company_mail, sector_name, company_location,
@@ -63,12 +72,11 @@ app.post('/submit', (req, res) => {
       });
     }
 
-    // Function to insert device after checks
+    // Device insertion function
     function insertDeviceNow() {
       const insertDevice = `
         INSERT INTO devices (device_id, device_name, software_version, installation_date, company_name)
         VALUES (?, ?, ?, ?, ?)`;
-
       db.query(insertDevice, [device_id, device_name, software_version, installation_date, company_name], (err4) => {
         if (err4) return res.send('❌ Error inserting device: ' + err4.sqlMessage);
         res.send('✅ Company and Device registered successfully!');
@@ -77,6 +85,7 @@ app.post('/submit', (req, res) => {
   });
 });
 
-// Start server
-//app.listen(80, () => console.log('🌐 Server running on http://localhost:3001'));
-app.listen(80, '0.0.0.0', () => console.log('🌐 Server running on http://<your-ip>:80'));
+// Start server on port 80
+app.listen(3001, '0.0.0.0', () => {
+  console.log('🌐 Server running on http://<your-ip>/form.html');
+});
