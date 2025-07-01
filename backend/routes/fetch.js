@@ -1,36 +1,50 @@
 const db = require('../dao/dao');
-const mongodb = require('../dao/mongodbdao');
 
 module.exports = {
-    getcompanies: async (req, res) => {
-        console.log("📥 GET /getcompanies called");
+    // ✅ NEW: Get sector names
+    getsectors: async (req, res) => {
+        console.log("📥 GET /sectors called");
 
-        // Check if DB object is valid
         if (!db || typeof db.query !== "function") {
             console.error("❌ DB is not connected or 'query' is not a function.");
             return res.status(500).send("Database not connected");
         }
 
-        db.query('SELECT company_name FROM companies', (err, result) => {
+        db.query('SELECT DISTINCT sector_name FROM sector', (err, result) => {
             if (err) {
-                console.error("❌ Error fetching company names from DB:", err);
-                return res.status(500).send("Error fetching company names");
+                console.error("❌ Error fetching sectors:", err);
+                return res.status(500).send("Error fetching sectors");
             }
 
-            console.log("✅ Companies fetched successfully:", result);
+            console.log("✅ Sectors fetched successfully:", result);
             res.status(200).json(result);
         });
     },
 
-    fetchall: async (req, res) => {
-        try {
-            const mongo = await mongodb.connectDB();
-            const collection = mongo.db("landslides").collection("posts");
-            const data = await collection.find({}).toArray();
-            res.json(data);
-        } catch (error) {
-            console.error("❌ Error fetching MongoDB data:", error);
-            res.status(500).send('Error fetching data');
+    // ✅ Existing: Get companies by sector
+    getcompanies: async (req, res) => {
+        console.log("📥 GET /getcompanies called");
+
+        if (!db || typeof db.query !== "function") {
+            console.error("❌ DB is not connected or 'query' is not a function.");
+            return res.status(500).send("Database not connected");
         }
-    }
+
+        const sector = req.query.sector;
+        if (!sector) {
+            console.warn("⚠️ No sector provided in query.");
+            return res.status(400).send("Sector is required");
+        }
+
+        db.query('SELECT company_name FROM companies WHERE sector_name = ?', [sector], (err, result) => {
+            if (err) {
+                console.error("❌ Error fetching companies from DB:", err);
+                return res.status(500).send("Error fetching companies");
+            }
+
+            console.log(`✅ Companies for sector "${sector}" fetched successfully:`, result);
+            res.status(200).json(result);
+        });
+    },
+
 };
