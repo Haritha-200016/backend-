@@ -2,13 +2,12 @@ import random
 import time
 import schedule
 from datetime import datetime
-from src.dbconnection import get_mariadb_connection
-
+from src.dbconnection import get_mariadb_connection  # Adjust this path if needed
+'''
 def generate_mining_data():
     conn = get_mariadb_connection()
     if not conn:
         return
-
     try:
         cursor = conn.cursor()
         timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -50,22 +49,16 @@ def generate_mining_data():
 
         cursor.execute(query, values)
         conn.commit()
-
-        print(f" ENV Data inserted: Time={timestamp}, AQI={air_quality}, CO={co_ppm}, CO2={co2_ppm}, "
-              f"O2={o2_percentage}, Humidity={humidity}, Water={water_level_m}, "
-              f"Seismic={seismic_activity_hz}, Noise={noise_pollution_db}")
-
+        print(f"🌱 ENV Data inserted at {timestamp}")
     except Exception as e:
-        print(f" Error inserting env_monitoring data: {e}")
+        print(f"❌ Error inserting env_monitoring data: {e}")
     finally:
         conn.close()
-
-
+'''
 def generate_equipment_data():
     conn = get_mariadb_connection()
     if not conn:
         return
-
     try:
         cursor = conn.cursor()
         timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -101,23 +94,86 @@ def generate_equipment_data():
             )
 
             cursor.execute(query, values)
-            print(f" EQUIP Data inserted for {name} at {timestamp}")
+            print(f"🔧 EQUIP Data inserted for {name} at {timestamp}")
+
+        conn.commit()
+    except Exception as e:
+        print(f"❌ Error inserting equipment data: {e}")
+    finally:
+        conn.close()
+
+def generate_worker_safety_data():
+    conn = get_mariadb_connection()
+    if not conn:
+        print("❌ Failed to connect to MariaDB for worker safety data.")
+        return
+
+    try:
+        cursor = conn.cursor()
+
+        # Define static worker IDs and random location ranges
+        workers = [
+            {"worker_id": 1, "latitude_range": (37.0, 38.0), "longitude_range": (-123.0, -122.0)},
+            {"worker_id": 2, "latitude_range": (19.0, 20.0), "longitude_range": (72.0, 73.0)},
+            {"worker_id": 3, "latitude_range": (40.0, 41.0), "longitude_range": (-75.0, -73.0)},
+            {"worker_id": 4, "latitude_range": (28.0, 29.0), "longitude_range": (76.0, 78.0)},
+        ]
+
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+        for worker in workers:
+            latitude = round(random.uniform(*worker["latitude_range"]), 6)
+            longitude = round(random.uniform(*worker["longitude_range"]), 6)
+            heart_rate = random.randint(70, 100)
+            temperature = round(random.uniform(35.5, 38.0), 2)
+            gas_CO = round(random.uniform(0.0, 0.05), 2)
+            gas_CO2 = round(random.uniform(0.0, 0.05), 2)
+            gas_NO2 = round(random.uniform(0.0, 0.05), 2)
+            gas_H2S = round(random.uniform(0.0, 0.05), 2)
+            man_down_alert = random.choice([0, 1])
+
+            query = """
+                INSERT INTO worker_safety (
+                    worker_id, latitude, longitude, heart_rate, temperature,
+                    gas_CO, gas_CO2, gas_NO2, gas_H2S, man_down_alert, timestamp
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    latitude = VALUES(latitude),
+                    longitude = VALUES(longitude),
+                    heart_rate = VALUES(heart_rate),
+                    temperature = VALUES(temperature),
+                    gas_CO = VALUES(gas_CO),
+                    gas_CO2 = VALUES(gas_CO2),
+                    gas_NO2 = VALUES(gas_NO2),
+                    gas_H2S = VALUES(gas_H2S),
+                    man_down_alert = VALUES(man_down_alert),
+                    timestamp = VALUES(timestamp)
+            """
+
+            values = (
+                worker["worker_id"], latitude, longitude, heart_rate, temperature,
+                gas_CO, gas_CO2, gas_NO2, gas_H2S, man_down_alert, timestamp
+            )
+
+            cursor.execute(query, values)
+            print(f"✅ Worker {worker['worker_id']} data updated at {timestamp}")
 
         conn.commit()
 
     except Exception as e:
-        print(f" Error inserting equipment data: {e}")
+        print(f"❌ Error inserting worker safety data: {e}")
     finally:
         conn.close()
 
-
-# Run once immediately
-generate_mining_data()
+# Immediate run
+#generate_mining_data()
 generate_equipment_data()
+generate_worker_safety_data()
 
 # Schedule every 1 minute
-schedule.every(1).minutes.do(generate_mining_data)
+#schedule.every(1).minutes.do(generate_mining_data)
 schedule.every(1).minutes.do(generate_equipment_data)
+schedule.every(1).minutes.do(generate_worker_safety_data)
 
 while True:
     schedule.run_pending()

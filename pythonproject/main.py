@@ -1,6 +1,42 @@
 import json
 from flask import Flask, jsonify
 from src.dbconnection import fetch_latest_data
+from src.randomdata import generate_mining_data
+import sys
+from datetime import datetime, timezone
+
+# Disable output buffering to ensure prints appear immediately
+sys.stdout.reconfigure(encoding='utf-8')
+
+print(" Python script started...", flush=True)
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "  hello !"  # Python App Running on Port 3009!
+
+if __name__ == "__main__":
+    print(" Starting Data Ingestion Service...")
+
+    # Fetch & store data ONCE at startup
+    print("\n Generating and storing new sensor data...")
+    generate_mining_data()
+
+    print("\n Fetching latest data from MariaDB...")
+    latest_data = fetch_latest_data()
+
+    if latest_data is None or latest_data.empty:
+        print(" No new data found in MariaDB!")
+    else:
+        print(f" Latest Data: {latest_data}")
+
+    # Start Flask server
+    app.run(host="0.0.0.0", port=3009, debug=True)
+
+'''import json
+from flask import Flask, jsonify
+from src.dbconnection import fetch_latest_data
 from src.prediction import predict_next_value
 from src.randomdata import generate_mining_data
 import sys
@@ -62,3 +98,4 @@ if __name__ == "__main__":
 
     # Start Flask server
     app.run(host="0.0.0.0", port=3009, debug=True)
+'''
