@@ -184,29 +184,60 @@ module.exports = {
   },
 
   receiveSensorData: (req, res) => {
-    const { temperature, humidity, air_quality, mq7_co, dust } = req.body;
+    const {
+      temperature,
+      humidity,
+      air_quality,  // Used for both air_quality & co2_ppm
+      mq7_co,       // co_ppm
+      dust,
+      vibration     // seismic_activity_hz
+    } = req.body;
 
     if (
       temperature === undefined ||
       humidity === undefined ||
       air_quality === undefined ||
       mq7_co === undefined ||
-      dust === undefined
+      dust === undefined ||
+      vibration === undefined
     ) {
-      return res.status(400).json({ error: 'Missing sensor data' });
+      return res.status(400).json({ error: 'Missing required sensor data' });
     }
 
+    const o2_percentage = (Math.random() * 5 + 18).toFixed(2);
+    const water_level_m = (Math.random() * 5).toFixed(2);
+    const noise_pollution_db = Math.floor(Math.random() * 40) + 60;
+
     const insertQuery = `
-      INSERT INTO sensor_data (temperature, humidity, co2_ppm, co_ppm, dust, timestamp)
-      VALUES (?, ?, ?, ?, ?, NOW())
+      INSERT INTO sensor_data (
+        temperature, humidity, air_quality, co_ppm, co2_ppm,
+        o2_percentage, dust, water_level_m, seismic_activity_hz, noise_pollution_db, timestamp
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
-    db.query(insertQuery, [temperature, humidity, air_quality, mq7_co, dust], (err, result) => {
-      if (err) return res.status(500).json({ error: 'SQL insert failed' });
+    const values = [
+      temperature,
+      humidity,
+      air_quality,
+      mq7_co,
+      air_quality, // reused for co2_ppm
+      o2_percentage,
+      dust,
+      water_level_m,
+      vibration,
+      noise_pollution_db
+    ];
+
+    db.query(insertQuery, values, (err, result) => {
+      if (err) {
+        console.error('Insert error:', err);
+        return res.status(500).json({ error: 'Failed to insert sensor data' });
+      }
 
       return res.status(201).json({
-        message: 'Sensor data stored successfully',
-        id: result.insertId,
+        message: 'Sensor data stored successfully (with random extras)',
+        id: result.insertId
       });
     });
   },
