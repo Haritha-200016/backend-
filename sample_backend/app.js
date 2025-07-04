@@ -1,6 +1,7 @@
 const express = require('express');
-const fetch = require('./routes/fetch');
-const insert = require('./routes/insert')
+const fetch = require('./routes/fetch');    // ✅ Sector & company fetching
+const insert = require('./routes/insert');  // ✅ Registration & Mongo insert
+
 
 const cors = require('cors');
 
@@ -10,31 +11,37 @@ app.use(express.json());
 
 const PORT = 5001;
 
+//GET: Fetch companies by sector
+app.get('/getcompanies', fetch.getcompanies);
 
+//NEW: GET /sectors (add this line to support sector loading)
+app.get('/sectors', fetch.getsectors); //This is what your Flutter needs
 
-app.get('/getcompanies',fetch.getcompanies);
+//POST: For testing POST body
 app.post('/test', (req, res) => {
-    console.log("Test API called with:", req.body);
-    res.json({ message: "Test successful", received: req.body });
+  console.log("Test API called with:", req.body);
+  res.json({ message: "Test successful", received: req.body });
 });
 
-app.post('/register',insert.register);
-app.post('/registertest',insert.registertest);
+//Registration/login related
+app.post('/register', insert.register);
+//app.post('/registertest', insert.registertest);
 app.post('/signin', insert.signin);
-app.post('/mailersend',insert.mailersend);
-app.post('/getDashboard',insert.getDashboard);
-app.post('/getDashboardDetails',insert.getDashboardDetails);
+//app.post('/mailersend', insert.mailersend);
+//app.post('/getDashboard', insert.getDashboard);
+//app.post('/getDashboardDetails', insert.getDashboardDetails);
+app.post('/forgot-password', insert.forgotPassword);
+app.post('/api/sensor-data', insert.receiveSensorData);
+app.get('/update-status', insert.updateStatus);
 
 
-app.get('/fetchall', fetch.fetchall)   // nosql
-app.post('/postdata', insert.insertDht) // nosql
 
-// Root Route
+//Root route
 app.get('/', (req, res) => {
-    res.send('');
+  res.send('');
 });
 
-// Start the Express Server on Port 5000
-app.listen(PORT,'0.0.0.0', () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+//Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

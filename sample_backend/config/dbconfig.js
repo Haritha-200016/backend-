@@ -1,8 +1,8 @@
 module.exports = {
-    host: "34.70.91.113",
+    host: "104.154.141.198",
     port: 3306,
     user: "root",
-    password: "velastra",
-    database: "APP"
+    password: "vistaarnksh",
+    database: "pro"
 }
 
