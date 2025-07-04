@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 5001;
+const PORT = 5002;
 
 //GET: Fetch companies by sector
 app.get('/getcompanies', fetch.getcompanies);
