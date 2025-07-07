@@ -264,13 +264,28 @@ updateStatus: (req, res) => {
     db.query(fetchQuery, [phone_no], async (err, rows) => {
       if (err || rows.length === 0) {
         console.error('❌ Error fetching user:', err);
-        return res.status(404).send('User not found');
+        return res.status(404).send(`
+          <html>
+            <head><script>alert("❌ User not found."); window.close();</script></head>
+            <body></body>
+          </html>
+        `);
       }
 
       const { email, name } = rows[0];
       await sendStatusMailToUser(email, name, status);
 
-      return res.send(`✅ Status updated to "${status}" and mail sent to ${email}`);
+      return res.send(`
+        <html>
+          <head>
+            <script>
+              alert("✅ Status updated to '${status.toUpperCase()}' for ${name}.");
+              window.location.href = "https://vistaarnksh.com"; // Change if needed
+            </script>
+          </head>
+          <body></body>
+        </html>
+      `);
     });
   });
 },
