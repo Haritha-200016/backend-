@@ -4,7 +4,7 @@ const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 
 const generateRandomNumber = () => Math.floor(1000000 + Math.random() * 9000000);
 
-const sendMailRegistration = async (toEmail, userName) => {
+const sendStatusMailToUser = async (toEmail, userName, status) => {
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -12,25 +12,27 @@ const sendMailRegistration = async (toEmail, userName) => {
       secure: false,
       port: 587,
       auth: {
-        user: 'usha@velastra.co',
-        pass: 'xzpw ixjm qpax jaim',
+        user: 'haritha@velastra.co',
+        pass: 'zbch zaom fcxs kmlf',
       },
       tls: { rejectUnauthorized: false },
     });
 
     const mailOptions = {
-      from: 'usha@velastra.co',
+      from: 'haritha@velastra.co',
       to: toEmail,
-      subject: 'Welcome to Velastra!',
-      text: `Hello ${userName},\n\nWelcome to Velastra! Your account has been successfully registered.\n\nBest Regards,\nVistaarnksh Team`,
+      subject: `Your Registration Status: ${status.toUpperCase()}`,
+      text: `Hello ${userName},\n\nYour registration status is now: ${status.toUpperCase()}.\n\nThank you,\nVelastra Team`,
     };
 
-    let info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${toEmail}: `, info.response);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Status mail sent to ${toEmail}:`, info.response);
   } catch (error) {
-    console.error('Error sending welcome email:', error);
+    console.error('❌ Error sending status mail to user:', error);
   }
 };
+
+
 
 const sendMailToCompany = async (companyMail, userDetails) => {
   try {
@@ -40,29 +42,52 @@ const sendMailToCompany = async (companyMail, userDetails) => {
       secure: false,
       port: 587,
       auth: {
-        user: 'usha@velastra.co',
-        pass: 'xzpw ixjm qpax jaim',
+        user: 'haritha@velastra.co',
+        pass: 'zbch zaom fcxs kmlf',
       },
       tls: { rejectUnauthorized: false },
     });
 
+
+    const encodedPhone = encodeURIComponent(userDetails.phone_no);
+
     const mailOptions = {
-      from: 'usha@velastra.co',
+      from: 'haritha@velastra.co',
       to: companyMail,
       subject: 'New User Registration – Grant Access Required',
-      text: `Hello,\n\nA new user has registered:\n
-      - Name: ${userDetails.name}
-      - Email: ${userDetails.email}
-      - Phone: ${userDetails.phone_no}
-      - Company: ${userDetails.company_name}\n\nPlease verify them.\n\nVistaarnksh Team`,
+      html: `
+        <p>Hello,</p>
+        <p>A new user has registered:</p>
+        <ul>
+          <li><b>Name:</b> ${userDetails.name}</li>
+          <li><b>Email:</b> ${userDetails.email}</li>
+          <li><b>Phone:</b> ${userDetails.phone_no}</li>
+          <li><b>Company:</b> ${userDetails.company_name}</li>
+        </ul>
+        <p>Please take an action:</p>
+        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=verified"
+           style="padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:4px;">✅ Approve</a>
+        &nbsp;
+        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=rejected"
+           style="padding:10px 20px;background-color:#f44336;color:white;text-decoration:none;border-radius:4px;">❌ Reject</a>
+        &nbsp;
+        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=in%20progress"
+           style="padding:10px 20px;background-color:#ff9800;color:white;text-decoration:none;border-radius:4px;">⏳ In Progress</a>
+        <br><br>
+        <p>— Vistaarnksh Team</p>
+      `,
     };
 
-    let info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${companyMail}: `, info.response);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email successfully sent to ${companyMail}:`, info.response);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Failed to send email to company:', {
+      message: error.message,
+      stack: error.stack,
+    });
   }
 };
+
 
 module.exports = {
   register: (req, res) => {
@@ -101,7 +126,8 @@ module.exports = {
             return res.status(500).json({ message: 'Database error during insert' });
           }
 
-          sendMailRegistration(email, name);
+          sendStatusMailToUser(email, name, 'in progress');
+
 
           const query1 = `SELECT company_mail FROM companies WHERE sector_name = ? AND company_name = ?`;
           db.query(query1, [sector_name, company_name], (err, results) => {
@@ -118,7 +144,7 @@ module.exports = {
 
           return res.status(201).json({
             status: 'success',
-            message: 'User registered successfully',
+            message: 'Registration successful! Approval may take up to 24 hours',
             user_id: randomNumber,
             name,
             email,
@@ -131,34 +157,43 @@ module.exports = {
   },
 
   signin: (req, res) => {
-    const { phone_no, password } = req.body;
-    if (!phone_no || !password)
-      return res.status(400).json({ message: 'Please provide valid credentials.' });
+  const { phone_no, password } = req.body;
 
-    const query = 'SELECT * FROM users WHERE phone_no = ? AND password = ?';
-    db.query(query, [phone_no, password], (err, result) => {
-      if (err) return res.status(500).json({ message: 'Database error' });
+  if (!phone_no || !password)
+    return res.status(400).json({ message: 'Please provide valid credentials.' });
 
-      if (result.length > 0) {
-        const user = result[0];
-        return res.status(200).json({
-          status: 'success',
-          message: 'Login successful',
-          user: {
-            user_id: user.user_id,
-            name: user.name,
-            phone_no: user.phone_no,
-            email: user.email,
-            sector_name: user.sector_name,
-            company_name: user.company_name,
-            access: user.access,
-          },
+  const query = 'SELECT * FROM users WHERE phone_no = ? AND password = ?';
+  db.query(query, [phone_no, password], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Database error' });
+
+    if (result.length > 0) {
+      const user = result[0];
+
+      if (user.access !== 'verified') {
+        return res.status(403).json({
+          status: 'pending',
+          message: 'Access not verified yet. Please wait for company approval.',
         });
-      } else {
-        return res.status(401).json({ message: 'Invalid credentials' });
       }
-    });
-  },
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Login successful',
+        user: {
+          user_id: user.user_id,
+          name: user.name,
+          phone_no: user.phone_no,
+          email: user.email,
+          sector_name: user.sector_name,
+          company_name: user.company_name,
+          access: user.access,
+        },
+      });
+    } else {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+  });
+},
 
   forgotPassword: (req, res) => {
     const { phone_no, password } = req.body;
@@ -184,65 +219,78 @@ module.exports = {
   },
 
   receiveSensorData: (req, res) => {
-    const {
-      temperature,
-      humidity,
-      air_quality,  // Used for both air_quality & co2_ppm
-      mq7_co,       // co_ppm
-      dust,
-      vibration     // seismic_activity_hz
-    } = req.body;
+    const { temperature, humidity, air_quality, mq7_co, dust } = req.body;
 
     if (
       temperature === undefined ||
       humidity === undefined ||
       air_quality === undefined ||
       mq7_co === undefined ||
-      dust === undefined ||
-      vibration === undefined
+      dust === undefined
     ) {
-      return res.status(400).json({ error: 'Missing required sensor data' });
+      return res.status(400).json({ error: 'Missing sensor data' });
     }
 
-    const o2_percentage = (Math.random() * 5 + 18).toFixed(2);
-    const water_level_m = (Math.random() * 5).toFixed(2);
-    const noise_pollution_db = Math.floor(Math.random() * 40) + 60;
-
     const insertQuery = `
-      INSERT INTO sensor_data (
-        temperature, humidity, air_quality, co_ppm, co2_ppm,
-        o2_percentage, dust, water_level_m, seismic_activity_hz, noise_pollution_db, timestamp
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO sensot_data (temperature, humidity, co2_ppm, co_ppm, dust, timestamp)
+      VALUES (?, ?, ?, ?, ?, NOW())
     `;
 
-    const values = [
-      temperature,
-      humidity,
-      air_quality,
-      mq7_co,
-      air_quality, // reused for co2_ppm
-      o2_percentage,
-      dust,
-      water_level_m,
-      vibration,
-      noise_pollution_db
-    ];
-
-    db.query(insertQuery, values, (err, result) => {
-      if (err) {
-        console.error('Insert error:', err);
-        return res.status(500).json({ error: 'Failed to insert sensor data' });
-      }
+    db.query(insertQuery, [temperature, humidity, air_quality, mq7_co, dust], (err, result) => {
+      if (err) return res.status(500).json({ error: 'SQL insert failed' });
 
       return res.status(201).json({
-        message: 'Sensor data stored successfully (with random extras)',
-        id: result.insertId
+        message: 'Sensor data stored successfully',
+        id: result.insertId,
       });
     });
   },
 
-  getDashboard: (req, res) => {
+updateStatus: (req, res) => {
+  const { phone_no, status } = req.query;
+
+  if (!phone_no || !status) {
+    return res.status(400).send('Missing phone_no or status');
+  }
+
+  const updateQuery = `UPDATE users SET access = ? WHERE phone_no = ?`;
+  db.query(updateQuery, [status, phone_no], (err, result) => {
+    if (err) {
+      console.error('❌ Database update error:', err);
+      return res.status(500).send('Database error');
+    }
+
+    const fetchQuery = `SELECT email, name FROM users WHERE phone_no = ?`;
+    db.query(fetchQuery, [phone_no], async (err, rows) => {
+      if (err || rows.length === 0) {
+        console.error('❌ Error fetching user:', err);
+        return res.status(404).send(`
+          <html>
+            <head><script>alert("❌ User not found."); window.close();</script></head>
+            <body></body>
+          </html>
+        `);
+      }
+
+      const { email, name } = rows[0];
+      await sendStatusMailToUser(email, name, status);
+
+      return res.send(`
+        <html>
+          <head>
+            <script>
+              alert("✅ Status updated to '${status.toUpperCase()}' for ${name}.");
+              window.location.href = "https://vistaarnksh.com"; // Change if needed
+            </script>
+          </head>
+          <body></body>
+        </html>
+      `);
+    });
+  });
+}
+
+ /* getDashboard: (req, res) => {
     const { company_name } = req.body;
     if (!company_name) return res.status(400).json({ message: 'Company name is required' });
 
@@ -294,28 +342,5 @@ module.exports = {
         return res.status(404).json({ message: 'No dashboard data found' });
       }
     });
-  },
-
-  mailersend: (req, res) => {
-    const mailerSend = new MailerSend({ apiKey: process.env.API_KEY });
-
-    const sentFrom = new Sender('usha@velastra.co', 'usha');
-    const recipients = [new Recipient('ushadevarapalli43@gmail.com', 'usha')];
-
-    const emailParams = new EmailParams()
-      .setFrom(sentFrom)
-      .setTo(recipients)
-      .setReplyTo(sentFrom)
-      .setSubject('Welcome! Your free trial is ready.')
-      .setTemplateId('templateId');
-
-    mailerSend.email
-      .send(emailParams)
-      .then((response) => {
-        res.status(200).json({ status: 'success', message: 'Email sent', response });
-      })
-      .catch((error) => {
-        res.status(500).json({ status: 'error', message: 'Failed to send email', error: error.message });
-      });
-  },
-};
+  }*/
+}

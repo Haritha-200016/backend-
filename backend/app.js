@@ -27,11 +27,13 @@ app.post('/test', (req, res) => {
 app.post('/register', insert.register);
 //app.post('/registertest', insert.registertest);
 app.post('/signin', insert.signin);
-app.post('/mailersend', insert.mailersend);
+//app.post('/mailersend', insert.mailersend);
 //app.post('/getDashboard', insert.getDashboard);
 //app.post('/getDashboardDetails', insert.getDashboardDetails);
 app.post('/forgot-password', insert.forgotPassword);
 app.post('/api/sensor-data', insert.receiveSensorData);
+app.get('/update-status', insert.updateStatus);
+
 
 
 //Root route
@@ -41,5 +43,5 @@ app.get('/', (req, res) => {
 
 //Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
