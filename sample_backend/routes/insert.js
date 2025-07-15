@@ -22,7 +22,7 @@ const sendStatusMailToUser = async (toEmail, userName, status) => {
       from: 'haritha@velastra.co',
       to: toEmail,
       subject: `Your Registration Status: ${status.toUpperCase()}`,
-      text: `Hello ${userName},\n\nYour registration status is now: ${status.toUpperCase()}.\n\nThank you,\nVistaarnksh Team`,
+      text: `Hello ${userName},\n\nYour registration status is now: ${status.toUpperCase()}.\n\nThank you,\nVelastra Team`,
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -288,9 +288,9 @@ updateStatus: (req, res) => {
       `);
     });
   });
-},
+}
 
-  getDashboard: (req, res) => {
+ /* getDashboard: (req, res) => {
     const { company_name } = req.body;
     if (!company_name) return res.status(400).json({ message: 'Company name is required' });
 
@@ -342,5 +342,5 @@ updateStatus: (req, res) => {
         return res.status(404).json({ message: 'No dashboard data found' });
       }
     });
-  }
+  }*/
 }
