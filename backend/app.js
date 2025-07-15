@@ -1,6 +1,6 @@
 const express = require('express');
-const fetch = require('./routes/fetch');    // ✅ Sector & company fetching
-const insert = require('./routes/insert');  // ✅ Registration & Mongo insert
+const fetch = require('./routes/fetch');   
+const insert = require('./routes/insert');  
 
 
 const cors = require('cors');
