@@ -65,13 +65,13 @@ const sendMailToCompany = async (companyMail, userDetails) => {
           <li><b>Company:</b> ${userDetails.company_name}</li>
         </ul>
         <p>Please take an action:</p>
-        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=verified"
+        <a href="http://104.154.141.198:5001/update-status?phone_no=${encodedPhone}&status=verified"
            style="padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:4px;">✅ Approve</a>
         &nbsp;
-        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=rejected"
+        <a href="http://104.154.141.198:5001/update-status?phone_no=${encodedPhone}&status=rejected"
            style="padding:10px 20px;background-color:#f44336;color:white;text-decoration:none;border-radius:4px;">❌ Reject</a>
         &nbsp;
-        <a href="http://104.154.141.198:5002/update-status?phone_no=${encodedPhone}&status=in%20progress"
+        <a href="http://104.154.141.198:5001/update-status?phone_no=${encodedPhone}&status=in%20progress"
            style="padding:10px 20px;background-color:#ff9800;color:white;text-decoration:none;border-radius:4px;">⏳ In Progress</a>
         <br><br>
         <p>— Vistaarnksh Team</p>
