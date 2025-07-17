@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register Company and Device</title>
+
+  <!-- ✅ Bootstrap CSS for styling -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- ✅ Load sector options from backend on page load -->
+  <script>
+    async function loadSectors() {
+      try {
+        const response = await fetch('/sectors'); // GET /sectors from app.js
+        const sectors = await response.json();
+        const select = document.getElementById('sector_name');
+        sectors.forEach(sector => {
+          const option = document.createElement('option');
+          option.value = sector.sector_name;
+          option.textContent = sector.sector_name;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        alert('❌ Error loading sector names!');
+      }
+    }
+
+    window.onload = loadSectors; // Trigger sector loading when page loads
+  </script>
+</head>
+<body class="bg-light">
+
+  <!-- ✅ Form container -->
+  <div class="container mt-5">
+    <div class="card shadow-lg">
+      <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Register Company and Device</h3>
+      </div>
+      <div class="card-body">
+
+        <!-- ✅ Form starts here -->
+        <form id="registrationForm" class="needs-validation" novalidate>
+
+          <!-- Sector Dropdown -->
+          <div class="mb-3">
+            <label class="form-label">Sector</label>
+            <select name="sector_name" id="sector_name" class="form-select" required>
+              <option value="">Select Sector</option>
+            </select>
+            <div class="invalid-feedback">Please select a sector.</div>
+          </div>
+
+          <!-- Company Name -->
+          <div class="mb-3">
+            <label class="form-label">Company Name</label>
+            <input type="text" name="company_name" class="form-control" required>
+            <div class="invalid-feedback">Company name is required.</div>
+          </div>
+
+          <!-- Company Email -->
+          <div class="mb-3">
+            <label class="form-label">Company Mail</label>
+            <input type="email" name="company_mail" class="form-control" required>
+            <div class="invalid-feedback">A valid email is required.</div>
+          </div>
+
+          <!-- Location -->
+          <div class="mb-3">
+            <label class="form-label">Company Location</label>
+            <input type="text" name="company_location" class="form-control" required>
+            <div class="invalid-feedback">Location is required.</div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Device ID (with special character validation) -->
+          <div class="mb-3">
+            <label class="form-label">Device ID</label>
+            <input type="text" name="device_id" class="form-control" required
+                   pattern="^[A-Za-z0-9@#_+\-=:.]{3,}$"
+                   title="Use letters, numbers, or symbols like @#_+-=">
+            <div class="invalid-feedback">Device ID is required and must be valid.</div>
+          </div>
+
+          <!-- Device Name -->
+          <div class="mb-3">
+            <label class="form-label">Device Name</label>
+            <input type="text" name="device_name" class="form-control" required>
+            <div class="invalid-feedback">Device name is required.</div>
+          </div>
+
+          <!-- Software Version -->
+          <div class="mb-3">
+            <label class="form-label">Software Version</label>
+            <input type="text" name="software_version" class="form-control" required>
+            <div class="invalid-feedback">Software version is required.</div>
+          </div>
+
+          <!-- Installation Date -->
+          <div class="mb-3">
+            <label class="form-label">Installation Date</label>
+            <input type="date" name="installation_date" class="form-control" required>
+            <div class="invalid-feedback">Installation date is required.</div>
+          </div>
+
+          <!-- Submit button -->
+          <button type="submit" class="btn btn-success w-100">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ JavaScript for Bootstrap validation + custom form submission -->
+  <script>
+    (() => {
+      const form = document.getElementById('registrationForm');
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Validate fields first
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+
+        // Prepare form data to send
+        const formData = new FormData(form);
+        const response = await fetch('/submit', {
+          method: 'POST',
+          body: new URLSearchParams(formData)
+        });
+
+        const result = await response.text();
+        alert(result); // ✅ Show popup message
+
+        // Reset form if success
+        if (result.includes('✅')) {
+          form.reset();
+          form.classList.remove('was-validated');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
