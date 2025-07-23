@@ -219,25 +219,26 @@ module.exports = {
   },
 
   receiveSensorData: (req, res) => {
-    const { temperature, humidity, air_quality, mq7_co, dust } = req.body;
+    const { temperature, humidity, air_quality, mq7_co, dust, vibration } = req.body;
 
     if (
       temperature === undefined ||
       humidity === undefined ||
       air_quality === undefined ||
       mq7_co === undefined ||
-      dust === undefined
+      dust === undefined ||
+      vibration === undefined
     ) {
       return res.status(400).json({ error: 'Missing sensor data' });
     }
 
     const insertQuery = `
-      INSERT INTO sensot_data (temperature, humidity, co2_ppm, co_ppm, dust, timestamp)
-      VALUES (?, ?, ?, ?, ?, NOW())
+      INSERT INTO sensor_data (temperature, humidity, co2_ppm, co_ppm, dust, seismic_activity_hz, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
-    db.query(insertQuery, [temperature, humidity, air_quality, mq7_co, dust], (err, result) => {
-      if (err) return res.status(500).json({ error: 'SQL insert failed' });
+    db.query(insertQuery, [temperature, humidity, air_quality, mq7_co, dust, vibration], (err, result) => {
+      if (err) return res.status(500).json({ error: 'SQL insert failed ' });
 
       return res.status(201).json({
         message: 'Sensor data stored successfully',
