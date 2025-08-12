@@ -288,7 +288,7 @@ updateStatus: (req, res) => {
       `);
     });
   });
-}
+},
 
  /* getDashboard: (req, res) => {
     const { company_name } = req.body;
@@ -343,4 +343,73 @@ updateStatus: (req, res) => {
       }
     });
   }*/
+ fetchDashboardData: (req, res) => {
+  const { company, sector } = req.query;
+
+  if (!company || !sector) {
+    return res.status(400).json({ error: 'Company and sector are required' });
+  }
+
+  // Step 1: Verify that the company exists in this sector (using companies table)
+  const verifyQuery = `
+    SELECT 1 FROM companies
+    WHERE company_name = ? AND sector_name = ?
+    LIMIT 1;
+  `;
+
+  db.query(verifyQuery, [company, sector], (err, verifyResults) => {
+    if (err) {
+      console.error('❌ Error verifying company/sector:', err.sqlMessage || err);
+      return res.status(500).json({ error: 'Database error while verifying sector/company' });
+    }
+
+    if (verifyResults.length === 0) {
+      return res.status(404).json({ error: 'No matching company found in this sector' });
+    }
+
+    // Step 2: Fetch devices for this company
+    const deviceQuery = `
+      SELECT device_id
+      FROM devices
+      WHERE company_name = ?;
+    `;
+
+    db.query(deviceQuery, [company], (err, deviceResults) => {
+      if (err) {
+        console.error('❌ Error fetching devices:', err.sqlMessage || err);
+        return res.status(500).json({ error: 'Database error while getting devices' });
+      }
+
+      const deviceIds = deviceResults.map(d => d.device_id);
+      if (deviceIds.length === 0) {
+        return res.status(200).json({ status: 'success', sector, company, devices: [], data: [] });
+      }
+
+      // Step 3: Fetch latest 50 sensor readings for these devices
+      const placeholders = deviceIds.map(() => '?').join(',');
+      const sensorQuery = `
+        SELECT *
+        FROM sensor_data
+        WHERE device_id IN (${placeholders})
+        ORDER BY timestamp DESC
+        LIMIT 50;
+      `;
+
+      db.query(sensorQuery, deviceIds, (err, sensorResults) => {
+        if (err) {
+          console.error('❌ Error fetching sensor data:', err.sqlMessage || err);
+          return res.status(500).json({ error: 'Database error while getting sensor data' });
+        }
+
+        res.json({
+          status: 'success',
+          sector,
+          company,
+          devices: deviceIds,
+          data: sensorResults
+        });
+      });
+    });
+  });
+}
 }

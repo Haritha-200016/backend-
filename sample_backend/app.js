@@ -1,15 +1,16 @@
 const express = require('express');
-const fetch = require('./routes/fetch');    // ✅ Sector & company fetching
-const insert = require('./routes/insert');  // ✅ Registration & Mongo insert
-
+const fetch = require('./routes/fetch');   
+const insert = require('./routes/insert');  
+const path = require('path');  
 
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = 5002;
+const PORT = 5001;
 
 //GET: Fetch companies by sector
 app.get('/getcompanies', fetch.getcompanies);
@@ -23,6 +24,11 @@ app.post('/test', (req, res) => {
   res.json({ message: "Test successful", received: req.body });
 });
 
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+
 //Registration/login related
 app.post('/register', insert.register);
 //app.post('/registertest', insert.registertest);
@@ -33,6 +39,7 @@ app.post('/signin', insert.signin);
 app.post('/forgot-password', insert.forgotPassword);
 app.post('/api/sensor-data', insert.receiveSensorData);
 app.get('/update-status', insert.updateStatus);
+app.get('/fetch-dashboard-data', insert.fetchDashboardData);
 
 
 
