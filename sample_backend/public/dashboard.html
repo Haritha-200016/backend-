@@ -1007,7 +1007,7 @@ setInterval(() => {
   const DEFAULT_COMPANY = new URLSearchParams(location.search).get('company') || 'velastra';
   const DEFAULT_SECTOR  = new URLSearchParams(location.search).get('sector')  || 'mining';
   // Use your backend URL (full absolute to avoid relative path issues in some setups)
-  const API_URL = `http://10.5.48.30:5001/fetch-dashboard-data?company=${encodeURIComponent(DEFAULT_COMPANY)}&sector=${encodeURIComponent(DEFAULT_SECTOR)}`;
+  const API_URL = `http://104.154.141.198:5001/fetch-dashboard-data?company=${encodeURIComponent(DEFAULT_COMPANY)}&sector=${encodeURIComponent(DEFAULT_SECTOR)}`;
 
   // ---- Helpers ----
   const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
