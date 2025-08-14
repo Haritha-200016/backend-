@@ -343,7 +343,7 @@ updateStatus: (req, res) => {
       }
     });
   }*/
- fetchDashboardData: (req, res) => {
+ /*fetchDashboardData: (req, res) => {
   const { company, sector } = req.query;
 
   if (!company || !sector) {
@@ -389,9 +389,8 @@ updateStatus: (req, res) => {
       const placeholders = deviceIds.map(() => '?').join(',');
       const sensorQuery = `
         SELECT *
-        FROM sensor_data
-        WHERE device_id IN (${placeholders})
-        ORDER BY timestamp DESC
+        FROM continuous_miner
+        ORDER BY log_timestamp DESC
         LIMIT 50;
       `;
 
@@ -411,5 +410,36 @@ updateStatus: (req, res) => {
       });
     });
   });
+}*/
+fetchDashboardData: (req, res) => {
+  const { company, sector } = req.query;
+
+  if (!company || !sector) {
+    return res.status(400).json({ error: 'Company and sector are required' });
+  }
+
+  // Fetch latest 50 sensor readings for everyone (ignore company/device filtering)
+  const sensorQuery = `
+    SELECT *
+    FROM continuous_miner
+    ORDER BY log_timestamp DESC
+    LIMIT 50;
+  `;
+
+  db.query(sensorQuery, (err, sensorResults) => {
+    if (err) {
+      console.error('❌ Error fetching sensor data:', err.sqlMessage || err);
+      return res.status(500).json({ error: 'Database error while getting sensor data' });
+    }
+
+    res.json({
+      status: 'success',
+      sector,
+      company,
+      devices: 'all',
+      data: sensorResults
+    });
+  });
 }
+
 }
