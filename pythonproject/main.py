@@ -1,4 +1,4 @@
-import json
+'''import json
 from flask import Flask, jsonify
 from src.dbconnection import fetch_latest_data
 from src.randomdata import generate_mining_data
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # Start Flask server
     app.run(host="0.0.0.0", port=3009, debug=True)
 
-'''import json
+import json
 from flask import Flask, jsonify
 from src.dbconnection import fetch_latest_data
 from src.prediction import predict_next_value
@@ -99,3 +99,41 @@ if __name__ == "__main__":
     # Start Flask server
     app.run(host="0.0.0.0", port=3009, debug=True)
 '''
+
+
+import json
+from flask import Flask, jsonify
+from src.dbconnection import fetch_latest_data
+from src.randomdata import generate_continuous_miner_data
+import sys
+from datetime import datetime, timezone
+
+# Ensure immediate console output
+sys.stdout.reconfigure(encoding='utf-8')
+
+print(" Python script started...", flush=True)
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Continuous Miner Data Service Running on Port 3009!"
+
+if __name__ == "__main__":
+    print(" Starting Continuous Miner Data Ingestion Service...")
+
+    # Generate and insert one set of random continuous miner data
+    print("\n Generating and storing new continuous miner sensor data...")
+    generate_continuous_miner_data()
+
+    # Fetch the latest entry from MariaDB
+    print("\n Fetching latest data from MariaDB (continuous_miner)...")
+    latest_data = fetch_latest_data(table_name="continuous_miner")
+
+    if latest_data is None or latest_data.empty:
+        print(" No new data found in MariaDB!")
+    else:
+        print(f" Latest Data:\n{latest_data}")
+
+    # Start the Flask server
+    app.run(host="0.0.0.0", port=3009, debug=True)

@@ -1,4 +1,5 @@
-import mariadb
+import mysql.connector as mariadb
+
 import pandas as pd
 
 def get_mariadb_connection():
@@ -8,7 +9,7 @@ def get_mariadb_connection():
             password="vistaarnksh",
             host="104.154.141.198",
             port=3306,
-            database="mining",
+            database="pro",
         )
         return conn
     except mariadb.Error as e:
@@ -21,7 +22,7 @@ def fetch_latest_data():
         return None
 
     try:
-        query = "SELECT * FROM env_monitoring ORDER BY timestamp DESC LIMIT 10"
+        query = "SELECT * FROM continuous_miner ORDER BY timestamp DESC LIMIT 10"
         df = pd.read_sql(query, conn)
         return df
     except Exception as e:

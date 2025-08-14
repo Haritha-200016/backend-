@@ -1,9 +1,9 @@
-import random
+'''import random
 import time
 import schedule
 from datetime import datetime
 from src.dbconnection import get_mariadb_connection  # Adjust this path if needed
-'''
+
 def generate_mining_data():
     conn = get_mariadb_connection()
     if not conn:
@@ -54,7 +54,7 @@ def generate_mining_data():
         print(f"❌ Error inserting env_monitoring data: {e}")
     finally:
         conn.close()
-'''
+
 def generate_equipment_data():
     conn = get_mariadb_connection()
     if not conn:
@@ -167,14 +167,107 @@ def generate_worker_safety_data():
 
 # Immediate run
 #generate_mining_data()
-generate_equipment_data()
-generate_worker_safety_data()
+#generate_equipment_data()
+#generate_worker_safety_data()
 
 # Schedule every 1 minute
 #schedule.every(1).minutes.do(generate_mining_data)
-schedule.every(1).minutes.do(generate_equipment_data)
-schedule.every(1).minutes.do(generate_worker_safety_data)
+#schedule.every(1).minutes.do(generate_equipment_data)
+#schedule.every(1).minutes.do(generate_worker_safety_data)
 
 while True:
     schedule.run_pending()
     time.sleep(60)
+'''
+
+
+
+
+
+
+
+import random
+import time
+import schedule
+from datetime import datetime
+import pytz
+from src.dbconnection import get_mariadb_connection  # Adjust path if needed
+ist = pytz.timezone("Asia/Kolkata")
+
+
+def generate_continuous_miner_data():
+    conn = get_mariadb_connection()
+    if not conn:
+        print("❌ Failed to connect to MariaDB.")
+        return
+    
+    try:
+        cursor = conn.cursor()
+        timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+
+
+        # Power & Electrical Systems
+        battery_health = round(random.uniform(50.0, 100.0), 2)  # %
+        voltage = round(random.uniform(200.0, 300.0), 2)        # volts
+        traction_motor_temp = round(random.uniform(60.0, 120.0), 2)  # °F
+        pick_wear_monitoring = round(random.uniform(0.0, 100.0), 2)  # %
+
+        # Cutter & Drum Systems
+        cutter_hours = round(random.uniform(1000.0, 2000.0), 2)      # hours
+        cutter_motor_torque_kw = round(random.uniform(300.0, 500.0), 2)  # kW
+        plc_control_panel_status = random.choice(["Normal", "Fault"])
+        plc_fault_count = random.randint(0, 5)
+
+        # Safety & Predictive Maintenance
+        vibration_level = round(random.uniform(10.0, 100.0), 2)      # arbitrary unit
+
+        # Hydraulic Systems
+        hydraulic_pressure_psi = round(random.uniform(2500.0, 3500.0), 3)
+        hydraulic_oil_level = random.choice(["Normal", "Low", "High"])
+        hydraulic_oil_temp = round(random.uniform(100.0, 160.0), 2)  # °F
+        hydraulic_system_status = random.choice(["Normal", "Hife", "Warning"])
+
+        # PLC & Control Panels
+        traction_control_status = random.choice(["Normal", "Fault"])
+        cutter_control_status = random.choice(["Normal", "Fault"])
+        plc_fault_details = random.choice([
+            "No faults",
+            "Overheat warning",
+            "Hydraulic pressure drop",
+            "Motor overload detected"
+        ])
+
+        query = """
+            INSERT INTO continuous_miner (
+                log_timestamp, battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
+                cutter_hours, cutter_motor_torque_kw, plc_control_panel_status, plc_fault_count,
+                vibration_level, hydraulic_pressure_psi, hydraulic_oil_level, hydraulic_oil_temp,
+                hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        values = (
+            timestamp, battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
+            cutter_hours, cutter_motor_torque_kw, plc_control_panel_status, plc_fault_count,
+            vibration_level, hydraulic_pressure_psi, hydraulic_oil_level, hydraulic_oil_temp,
+            hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details
+        )
+
+        cursor.execute(query, values)
+        conn.commit()
+        print(f"🛠 Continuous Miner data inserted at {timestamp}")
+
+    except Exception as e:
+        print(f"❌ Error inserting continuous miner data: {e}")
+    finally:
+        conn.close()
+
+# Schedule to run every 3 minutes
+schedule.every(3).minutes.do(generate_continuous_miner_data)
+
+# Immediate first run
+generate_continuous_miner_data()
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
