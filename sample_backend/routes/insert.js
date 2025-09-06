@@ -525,7 +525,7 @@ fetchDashboardData: (req, res) => {
     WHERE r.company_name = ?
       AND r.region_name = ?
     ORDER BY s.timestamp DESC
-    LIMIT 20;
+    LIMIT 5;
   `;
 
   db.query(sensorQuery, [company, region], (err, sensorResults) => {
