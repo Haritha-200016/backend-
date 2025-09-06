@@ -9,7 +9,7 @@ def get_mariadb_connection():
             password="vistaarnksh",
             host="104.154.141.198",
             port=3306,
-            database="pro",
+            database="project",
         )
         return conn
     except mariadb.Error as e:

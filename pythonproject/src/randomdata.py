@@ -189,84 +189,170 @@ while True:
 import random
 import time
 import schedule
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
-from src.dbconnection import get_mariadb_connection  # Adjust path if needed
+from src.dbconnection import get_mariadb_connection
+
 ist = pytz.timezone("Asia/Kolkata")
 
-
-def generate_continuous_miner_data():
+def generate_all_sensor_data():
+    devices = ["d1", "d2", "d3", "d4", "d5"]
     conn = get_mariadb_connection()
     if not conn:
         print("❌ Failed to connect to MariaDB.")
         return
-    
+
     try:
         cursor = conn.cursor()
         timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
+        for Device_id in devices:
+            for motor in ["M1", "M2", "M3", "M4"]:
 
-        # Power & Electrical Systems
-        battery_health = round(random.uniform(50.0, 100.0), 2)  # %
-        voltage = round(random.uniform(200.0, 300.0), 2)        # volts
-        traction_motor_temp = round(random.uniform(60.0, 120.0), 2)  # °F
-        pick_wear_monitoring = round(random.uniform(0.0, 100.0), 2)  # %
+            # 🌍 Environmental Monitoring
+                air_quality = random.randint(0, 500)
+                co_ppm = round(random.uniform(0.0, 9.0), 2)
+                co2_ppm = random.randint(200, 500)
+                o2_percentage = round(random.uniform(17.0, 22.0), 2)
+                humidity = random.randint(40, 90)
+                water_level_m = round(random.uniform(0.0, 5.0), 2)
+                seismic_activity_hz = round(random.uniform(0.1, 10.0), 2)
+                noise_pollution_db = random.randint(30, 120)
 
-        # Cutter & Drum Systems
-        cutter_hours = round(random.uniform(1000.0, 2000.0), 2)      # hours
-        cutter_motor_torque_kw = round(random.uniform(300.0, 500.0), 2)  # kW
-        plc_control_panel_status = random.choice(["Normal", "Fault"])
-        plc_fault_count = random.randint(0, 5)
+                # ⚙️ Equipment Data
+                equipment_name = random.choice(["Excavator", "Crusher", "Truck", "Loader"])
+                temperature = round(random.uniform(70, 90), 1)
+                pressure = round(random.randint(1300, 1600))
+                motor_load = random.randint(75, 95)
+                machine_runtime = random.randint(300, 700)
+                fuel_consumption = random.randint(100, 150)
+                tyre_pressure = random.randint(30, 45)
+                battery_status = random.randint(80, 100)
+                load_weight = random.randint(1000, 2000)
+                latitude = round(random.uniform(18.0, 40.0), 6)
+                longitude = round(random.uniform(70.0, 80.0), 6)
 
-        # Safety & Predictive Maintenance
-        vibration_level = round(random.uniform(10.0, 100.0), 2)      # arbitrary unit
+                # 🦺 Worker Safety
+                worker_id = f"W{random.randint(1, 10)}"
+                heart_rate = random.randint(70, 100)
+                gas_CO = round(random.uniform(0.0, 0.05), 2)
+                gas_CO2 = round(random.uniform(0.0, 0.05), 2)
+                gas_NO2 = round(random.uniform(0.0, 0.05), 2)
+                gas_H2S = round(random.uniform(0.0, 0.05), 2)
+                man_down_alert = random.choice([0, 1])
 
-        # Hydraulic Systems
-        hydraulic_pressure_psi = round(random.uniform(2500.0, 3500.0), 3)
-        hydraulic_oil_level = random.choice(["Normal", "Low", "High"])
-        hydraulic_oil_temp = round(random.uniform(100.0, 160.0), 2)  # °F
-        hydraulic_system_status = random.choice(["Normal", "Hife", "Warning"])
+                # ⛏️ Continuous Miner & RAM Car
+                battery_health = round(random.uniform(50.0, 100.0), 2)
+                voltage = round(random.uniform(200.0, 300.0), 2)
+                traction_motor_temp = round(random.uniform(60.0, 120.0), 2)
+                pick_wear_monitoring = round(random.uniform(0.0, 100.0), 2)
+                cutter_hours = round(random.uniform(1000.0, 2000.0), 2)
+                cutter_motor_torque_kw = round(random.uniform(300.0, 500.0), 2)
+                plc_control_panel_status = random.choice(["Normal", "Fault"])
+                plc_fault_count = random.randint(0, 5)
+                vibration_level = round(random.uniform(10.0, 100.0), 2)
+                hydraulic_pressure_psi = round(random.uniform(2500.0, 3500.0), 2)
+                hydraulic_oil_level = round(random.uniform(30, 100), 2)  # float
+                hydraulic_oil_temp = round(random.uniform(100.0, 160.0), 2)
+                hydraulic_system_status = random.choice(["Normal", "High", "Warning"])
+                traction_control_status = random.choice(["Normal", "Fault"])
+                cutter_control_status = random.choice(["Normal", "Fault"])
+                plc_fault_details = random.choice([
+                    "No faults", "Overheat warning", "Hydraulic pressure drop", "Motor overload detected"
+                ])
+                #Ram Car
+                exhaust_gas_ppm = round(random.uniform(200.0, 500.0), 2)
+                engine_heat = round(random.uniform(70.0, 120.0), 2)
+                oil_pressure_bar = round(random.uniform(1.0, 6.0), 3)
+                coolant_temperature = round(random.uniform(60.0, 100.0), 2)
+                oil_pressure = round(random.uniform(20.0, 80.0), 2)
+                total_hours = random.randint(500, 3000)
+                reining = round(random.uniform(0.0, 100.0), 2)
+                #motor = random.choice(["M1", "M2", "M3", "M4"])
+                date_of_fitment = (datetime.now() - timedelta(days=random.randint(100, 1000))).date()
+                remaining_hours = random.randint(50, 1000)
 
-        # PLC & Control Panels
-        traction_control_status = random.choice(["Normal", "Fault"])
-        cutter_control_status = random.choice(["Normal", "Fault"])
-        plc_fault_details = random.choice([
-            "No faults",
-            "Overheat warning",
-            "Hydraulic pressure drop",
-            "Motor overload detected"
-        ])
+                # Mining Metrics
+                active_blast_areas = round(random.uniform(0, 5), 2)
+                development_meters = round(random.uniform(0, 500), 2)
+                production_meters = round(random.uniform(0, 1000), 2)
+                ore_mined = round(random.uniform(0, 10000), 2)
+                throughput = round(random.uniform(50, 500), 2)
+                crusher_availability = round(random.uniform(70, 100), 2)
+                mill_vibration = round(random.uniform(0, 10), 2)
+                dump_trucks_utilization = round(random.uniform(50, 100), 2)
+                excavators_utilization = round(random.uniform(50, 100), 2)
+                drills_utilization = round(random.uniform(50, 100), 2)
+                dust = round(random.uniform(0, 500), 2)
 
-        query = """
-            INSERT INTO continuous_miner (
-                log_timestamp, battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
+            # 🔽 Insert into dummy
+            query = """
+                INSERT INTO sensor_data (
+                    id,device_id, timestamp, air_quality, co_ppm, co2_ppm, o2_percentage, humidity,
+                    water_level_m, seismic_activity_hz, noise_pollution_db, equipment_name,
+                    temperature, pressure, motor_load, machine_runtime, fuel_consumption,
+                    tyre_pressure, battery_status, load_weight, latitude, longitude,
+                    worker_id, heart_rate, gas_CO, gas_CO2, gas_NO2, gas_H2S, man_down_alert,
+                    battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
+                    cutter_hours, cutter_motor_torque_kw, plc_control_panel_status, plc_fault_count,
+                    vibration_level, hydraulic_pressure_psi, hydraulic_oil_level, hydraulic_oil_temp,
+                    hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details,
+                    exhaust_gas_ppm, engine_heat, oil_pressure_bar, coolant_temperature, oil_pressure,
+                    total_hours, reining, motor, date_of_fitment, remaining_hours,
+                    active_blast_areas, development_meters, production_meters, ore_mined, throughput,
+                    crusher_availability, mill_vibration, dump_trucks_utilization, excavators_utilization,
+                    drills_utilization, dust
+                ) VALUES (
+                    NULL, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s
+                )
+            """
+
+            values = (
+                Device_id, timestamp, air_quality, co_ppm, co2_ppm, o2_percentage, humidity,
+                water_level_m, seismic_activity_hz, noise_pollution_db, equipment_name,
+                temperature, pressure, motor_load, machine_runtime, fuel_consumption,
+                tyre_pressure, battery_status, load_weight, latitude, longitude,
+                worker_id, heart_rate, gas_CO, gas_CO2, gas_NO2, gas_H2S, man_down_alert,
+                battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
                 cutter_hours, cutter_motor_torque_kw, plc_control_panel_status, plc_fault_count,
                 vibration_level, hydraulic_pressure_psi, hydraulic_oil_level, hydraulic_oil_temp,
-                hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
+                hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details,
+                exhaust_gas_ppm, engine_heat, oil_pressure_bar, coolant_temperature, oil_pressure,
+                total_hours, reining, motor, date_of_fitment, remaining_hours,
+                active_blast_areas, development_meters, production_meters, ore_mined, throughput,
+                crusher_availability, mill_vibration, dump_trucks_utilization, excavators_utilization,
+                drills_utilization, dust
+            )
 
-        values = (
-            timestamp, battery_health, voltage, traction_motor_temp, pick_wear_monitoring,
-            cutter_hours, cutter_motor_torque_kw, plc_control_panel_status, plc_fault_count,
-            vibration_level, hydraulic_pressure_psi, hydraulic_oil_level, hydraulic_oil_temp,
-            hydraulic_system_status, traction_control_status, cutter_control_status, plc_fault_details
-        )
+            cursor.execute(query, values)
 
-        cursor.execute(query, values)
         conn.commit()
-        print(f"🛠 Continuous Miner data inserted at {timestamp}")
+        print(f"✅ All sensor data inserted at {timestamp}")
 
     except Exception as e:
-        print(f"❌ Error inserting continuous miner data: {e}")
+        print(f"❌ Error inserting data: {e}")
     finally:
         conn.close()
 
-# Schedule to run every 3 minutes
-schedule.every(3).minutes.do(generate_continuous_miner_data)
 
-# Immediate first run
-generate_continuous_miner_data()
+# Schedule every 2 minutes
+schedule.every(2).minutes.do(generate_all_sensor_data)
+
+# Run immediately
+generate_all_sensor_data()
 
 while True:
     schedule.run_pending()
