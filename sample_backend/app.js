@@ -18,6 +18,8 @@ app.get('/getcompanies', fetch.getcompanies);
 //NEW: GET /sectors (add this line to support sector loading)
 app.get('/sectors', fetch.getsectors); //This is what your Flutter needs
 
+app.get('/getregions', fetch.getregions);
+
 //POST: For testing POST body
 app.post('/test', (req, res) => {
   console.log("Test API called with:", req.body);
@@ -38,8 +40,9 @@ app.post('/signin', insert.signin);
 //app.post('/getDashboardDetails', insert.getDashboardDetails);
 app.post('/forgot-password', insert.forgotPassword);
 app.post('/api/sensor-data', insert.receiveSensorData);
-app.get('/update-status', insert.updateStatus);
+//app.get('/update-status', insert.updateStatus);
 app.get('/fetch-dashboard-data', insert.fetchDashboardData);
+//app.get('/fetch-continuous-data', insert.fetchContinousData);
 
 
 

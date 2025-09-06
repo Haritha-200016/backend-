@@ -47,4 +47,26 @@ module.exports = {
         });
     },
 
-};
+    // ✅ Existing: Get regions by company
+    getregions: (req, res) => {
+    console.log("📥 GET /getregions called");
+    console.log("Query params:", req.query);
+
+    const company = req.query.company;
+    if (!company) return res.status(400).send("Company is required");
+
+    db.query(
+        "SELECT region_id, region_name FROM regions WHERE company_name = ?",
+        [company],
+        (err, results) => {
+            if (err) {
+                console.error("DB error:", err);
+                return res.status(500).send("DB error");
+            }
+            console.log("Regions fetched:", results);
+            res.json(results);
+        }
+    );
+}
+
+}

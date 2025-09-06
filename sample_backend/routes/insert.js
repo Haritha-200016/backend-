@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 
 const generateRandomNumber = () => Math.floor(1000000 + Math.random() * 9000000);
-
+/*
 const sendStatusMailToUser = async (toEmail, userName, status) => {
   try {
     const transporter = nodemailer.createTransport({
@@ -86,17 +86,82 @@ const sendMailToCompany = async (companyMail, userDetails) => {
       stack: error.stack,
     });
   }
-};
+};*/
 
 
 module.exports = {
   register: (req, res) => {
-    const { name, phone_no, email, password, sector_name, company_name } = req.body;
+    console.log("📥 POST /register called");
+    console.log("Body:", req.body);
+
+    const { name, phone_no, email, password, sector_name, company_name, region_ids } = req.body;
+
+    if (!name || !phone_no || !email || !password || !sector_name || !company_name || !region_ids || !Array.isArray(region_ids) || region_ids.length === 0) {
+        return res.status(400).send({ status: "error", message: "All fields are required, and region_ids must be a non-empty array" });
+    }
+
+    // Validate region_ids belong to the company
+    db.query(
+        "SELECT region_id FROM regions WHERE company_name = ? AND region_id IN (?)",
+        [company_name, region_ids],
+        (err, results) => {
+            if (err) {
+                console.error("DB error:", err);
+                return res.status(500).send({ status: "error", message: "DB error" });
+            }
+
+            const validRegionIds = results.map(r => r.region_id.toString());
+            if (validRegionIds.length !== region_ids.length) {
+                return res.status(400).send({ status: "error", message: "Invalid region_ids for the selected company" });
+            }
+
+            // Insert into users table (exclude user_id, let it auto-increment)
+            db.query(
+                "INSERT INTO users (name, phone_no, email, password, company_name, sector_name, access) VALUES (?, ?, ?, ?, ?, ?, 'in progress')",
+                [name, phone_no, email, password, company_name, sector_name],
+                (err, userResult) => {
+                    if (err) {
+                        console.error("DB error:", err);
+                        return res.status(500).send({ status: "error", message: "DB error: " + err.message });
+                    }
+
+                    const user_id = userResult.insertId;
+
+                    // Insert into user_regions table
+                    const regionValues = region_ids.map(id => [phone_no, id]);
+                    db.query(
+                        "INSERT INTO user_regions (phone_no, region_id) VALUES ?",
+                        [regionValues],
+                        (err) => {
+                            if (err) {
+                                console.error("DB error:", err);
+                                return res.status(500).send({ status: "error", message: "DB error: " + err.message });
+                            }
+
+                            res.status(201).send({
+                                status: "success",
+                                user_id,
+                                name,
+                                company_name,
+                                message: "User successfully registered"
+                            });
+                        }
+                    );
+                }
+            );
+        }
+    );
+},
+/*  register: (req, res) => {
+    const { name, phone_no, email, password, sector_name, company_name, region_ids } = req.body;
     const randomNumber = generateRandomNumber();
     const access = 'in progress';
 
-    if (!name || !email || !password || !phone_no || !sector_name || !company_name) {
+    if (!name || !email || !password || !phone_no || !sector_name || !company_name || !region_ids) {
       return res.status(400).json({ message: 'All fields are required including sector' });
+    }
+     if (!/^\d{4}$/.test(password)) {
+      return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
     }
 
     const checkQuery = `SELECT * FROM users WHERE phone_no = ? OR email = ?`;
@@ -126,7 +191,18 @@ module.exports = {
             return res.status(500).json({ message: 'Database error during insert' });
           }
 
-          sendStatusMailToUser(email, name, 'in progress');
+          // Insert user_regions entries
+        const regionInsertValues = region_ids.map(region_id => [randomNumber, region_id]);
+        const regionQuery = `INSERT INTO user_regions (user_id, region_id) VALUES ?`;
+
+        db.query(regionQuery, [regionInsertValues], (err) => {
+          if (err) {
+            console.error('Error assigning regions to user:', err);
+            return res.status(500).json({ message: 'Database error assigning regions' });
+          }
+
+          
+          //sendStatusMailToUser(email, name, 'in progress');
 
 
           const query1 = `SELECT company_mail FROM companies WHERE sector_name = ? AND company_name = ?`;
@@ -138,7 +214,7 @@ module.exports = {
 
             if (results.length > 0) {
               const companyMail = results[0].company_mail;
-              sendMailToCompany(companyMail, { name, email, phone_no, sector_name, company_name });
+              //sendMailToCompany(companyMail, { name, email, phone_no, sector_name, company_name });
             }
           });
 
@@ -150,17 +226,23 @@ module.exports = {
             email,
             sector_name,
             company_name,
+            region_ids,
+          });
           });
         }
       );
     });
-  },
+  },*/
 
   signin: (req, res) => {
   const { phone_no, password } = req.body;
 
-  if (!phone_no || !password)
-    return res.status(400).json({ message: 'Please provide valid credentials.' });
+    if (!/^\d{4}$/.test(password)) {
+    return res.status(401).json({ message: 'Invalid credentials' }); // generic message
+    }
+
+    if (!phone_no || !password)
+      return res.status(400).json({ message: 'Please provide valid credentials.' });
 
   const query = 'SELECT * FROM users WHERE phone_no = ? AND password = ?';
   db.query(query, [phone_no, password], (err, result) => {
@@ -169,12 +251,22 @@ module.exports = {
     if (result.length > 0) {
       const user = result[0];
 
-      if (user.access !== 'verified') {
+      /*if (user.access !== 'verified') {
         return res.status(403).json({
           status: 'pending',
           message: 'Access not verified yet. Please wait for company approval.',
         });
-      }
+      }*/
+
+        // Fetch regions
+      const regionQuery = `
+        SELECT r.region_name
+        FROM user_regions ur
+        JOIN regions r ON ur.region_id = r.region_id
+        WHERE ur.phone_no = ?`;
+
+      db.query(regionQuery, [phone_no], (err, regions) => {
+      if (err) return res.status(500).json({ message: 'Error fetching regions' });
 
       return res.status(200).json({
         status: 'success',
@@ -187,7 +279,9 @@ module.exports = {
           sector_name: user.sector_name,
           company_name: user.company_name,
           access: user.access,
+          regions: regions.map(r => r.region_name),
         },
+      });
       });
     } else {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -199,6 +293,9 @@ module.exports = {
     const { phone_no, password } = req.body;
     if (!phone_no || !password)
       return res.status(400).json({ message: 'Phone number and password required' });
+    if (!/^\d{4}$/.test(password)) {
+      return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
+    }
 
     const cleanPhone = phone_no.trim();
 
@@ -246,7 +343,7 @@ module.exports = {
     });
   },
 
-updateStatus: (req, res) => {
+/*updateStatus: (req, res) => {
   const { phone_no, status } = req.query;
 
   if (!phone_no || !status) {
@@ -288,7 +385,7 @@ updateStatus: (req, res) => {
       `);
     });
   });
-},
+},*/
 
  /* getDashboard: (req, res) => {
     const { company_name } = req.body;
@@ -411,7 +508,95 @@ updateStatus: (req, res) => {
     });
   });
 }*/
+//this is all sector and company 
 fetchDashboardData: (req, res) => {
+  const { sector, company, region } = req.query;
+
+  if (!company || !region) {
+    return res.status(400).json({ error: 'Company and region are required' });
+  }
+
+  // ✅ Adjusted query (sector is optional depending on schema)
+  const sensorQuery = `
+    SELECT s.*
+    FROM sensor_data s
+    JOIN devices d ON s.device_id = d.device_id
+    JOIN regions r ON d.region_id = r.region_id
+    WHERE r.company_name = ?
+      AND r.region_name = ?
+    ORDER BY s.timestamp DESC
+    LIMIT 20;
+  `;
+
+  db.query(sensorQuery, [company, region], (err, sensorResults) => {
+    if (err) {
+      console.error('❌ SQL error:', err.sqlMessage || err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (sensorResults.length === 0) {
+      return res.status(404).json({ error: 'No sensor data found for this region' });
+    }
+
+    res.json({
+      status: 'success',
+      company,
+      region,
+      devices: [...new Set(sensorResults.map(r => r.device_id))],
+      data: sensorResults
+    });
+  });
+}
+/*fetchDashboardData: (req, res) => {
+  const { company, sector } = req.query;
+
+  if (!company || !sector) {
+    return res.status(400).json({ error: 'Company and sector are required' });
+  }
+
+  // Queries
+  const minerQuery = `
+    SELECT *
+    FROM continuous_miner
+    ORDER BY log_timestamp DESC
+    LIMIT 10;
+  `;
+
+  const sensorQuery = `
+    SELECT *
+    FROM sensor_data
+    ORDER BY timestamp DESC
+    LIMIT 10;
+  `;
+
+  // Run first query (continuous_miner)
+  db.query(minerQuery, (err, minerResults) => {
+    if (err) {
+      console.error('❌ Error fetching continuous_miner data:', err.sqlMessage || err);
+      return res.status(500).json({ error: 'Database error while getting continuous_miner data' });
+    }
+
+    // Run second query (sensor_data)
+    db.query(sensorQuery, (err, sensorResults) => {
+      if (err) {
+        console.error('❌ Error fetching sensor_data:', err.sqlMessage || err);
+        return res.status(500).json({ error: 'Database error while getting sensor_data' });
+      }
+
+      // Send combined response
+      res.json({
+        status: 'success',
+        sector,
+        company,
+        devices: 'all',
+        continuous_miner: minerResults,  // ✅ first table data
+        sensor_data: sensorResults       // ✅ second table data
+      });
+    });
+  });
+}*/
+
+/*fetchContinousData: (req, res) => {
   const { company, sector } = req.query;
 
   if (!company || !sector) {
@@ -419,27 +604,27 @@ fetchDashboardData: (req, res) => {
   }
 
   // Fetch latest 50 sensor readings for everyone (ignore company/device filtering)
-  const sensorQuery = `
+  const minerQuery = `
     SELECT *
     FROM continuous_miner
     ORDER BY log_timestamp DESC
-    LIMIT 50;
+    LIMIT 10;
   `;
 
-  db.query(sensorQuery, (err, sensorResults) => {
+  db.query(minerQuery, (err, minerResults) => {
     if (err) {
-      console.error('❌ Error fetching sensor data:', err.sqlMessage || err);
-      return res.status(500).json({ error: 'Database error while getting sensor data' });
+      console.error('❌ Error fetching continuous_miner data:', err.sqlMessage || err);
+      return res.status(500).json({ error: 'Database error while getting continuous_miner data' });
     }
+    
 
     res.json({
       status: 'success',
       sector,
       company,
       devices: 'all',
-      data: sensorResults
+      data: minerResults
     });
   });
-}
-
+}*/
 }
