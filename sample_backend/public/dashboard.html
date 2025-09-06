@@ -459,24 +459,6 @@
 <body>
   <h1>Mining Sensor Dashboard</h1>
 
-<!-- Only wrap the buttons 
-<div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('view')">Overview</div>
-  <div id="view" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('env')">ENV Monitoring</div>
-  <div id="env" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('machinery')">Machinery Analysis</div>
-  <div id="machinery" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('worker')">Worker Safety</div>
-  <div id="worker" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('prediction')">Prediction Dashboard</div>
-  <div id="prediction" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('Continuous_minier')">Continuous Miner</div>
-  <div id="Continuous_minier" class="panel-content"></div>
-  <div class="panel-title" class="panel-button-group" onclick="togglePanel('Ram_car')">Ram Car</div>
-  <div id="Ram_car" class="panel-content"></div>
-</div> -->
-
 <!-- Header with back button -->
 <div id="panel-header" style="display:none; align-items:center; gap:100px; padding:10px; background:#f7abab;">
   <button onclick="goBack()">⬅ Back</button>
@@ -597,7 +579,7 @@
   }
 
   // ---------- Tiny Canvas Line Chart (no external libraries) ----------
-  function drawVibrationChart(canvas, points, labels){
+  function drawVibrationChart(canvas, points, labels, customLineCol = null){
     if (!canvas) return;
 
     // device pixel ratio handling
@@ -633,7 +615,7 @@
 
     // colors
     const axis = getComputedStyle(document.documentElement).getPropertyValue('--track') || '#24364f';
-    const lineCol = getComputedStyle(document.documentElement).getPropertyValue('--ok') || '#1abc9c';
+    const lineCol = customLineCol || getComputedStyle(document.documentElement).getPropertyValue('--ok') || '#1abc9c';
     const gridCol = 'rgba(255,255,255,0.06)';
     const textCol = getComputedStyle(document.documentElement).getPropertyValue('--muted') || '#a8b3c6';
 
@@ -1228,6 +1210,38 @@ const dumpChart = document.getElementById('chart-dump-trucks');
     </div>
   </div>
   `;
+  setTimeout(() => {
+    const chartConfig = {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: 10 }, (_, i) => i),
+        datasets: [{
+          data: Array.from({ length: 10 }, () => Math.random() * 100),
+          borderColor: '#00cfff',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        }
+      }
+    };
+    new Chart(document.getElementById('chart1'), chartConfig);
+    new Chart(document.getElementById('chart2'), chartConfig);
+    new Chart(document.getElementById('chart3'), chartConfig);
+    new Chart(document.getElementById('chart4'), chartConfig);
+    new Chart(document.getElementById('chart5'), chartConfig);
+    new Chart(document.getElementById('chart6'), chartConfig);
+    new Chart(document.getElementById('chart7'), chartConfig);
+    new Chart(document.getElementById('chart8'), chartConfig);
+  }, 0);
   }
   if (panelId === "Continuous_minier") {
     container.innerHTML = `
