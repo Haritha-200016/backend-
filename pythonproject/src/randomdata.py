@@ -580,6 +580,11 @@ while True:
 
 
 
+
+
+
+
+
 import time
 import itertools
 from src.dbconnection import get_mariadb_connection
