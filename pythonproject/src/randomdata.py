@@ -587,45 +587,50 @@ while True:
 
 import time
 import itertools
-from src.dbconnection import get_mariadb_connection
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+from src.dbconnection import get_mariadb_connection
+import math
 
 # 1️⃣ Read Excel file
 file_path = r"src\realtime.xlsx"
 df = pd.read_excel(file_path)
 
-# 2️⃣ Database connection
+# 2️⃣ Replace NaN with None for database insertion
+df = df.where(pd.notnull(df), None)
+
+# 3️⃣ Remove 'id' column since it's auto-incremented
+records = [{k: v for k, v in row.items() if k != 'id'} for row in df.to_dict(orient="records")]
+
+# 4️⃣ Database connection
 db = get_mariadb_connection()
 cursor = db.cursor()
 
-# 3️⃣ Correct table name
+# 5️⃣ Table name
 table = "realtime_sensor_data"
 
-# 4️⃣ Clean DataFrame and exclude 'id' from insertion
-df = df.where(pd.notnull(df), None)   # Replace NaN → None
-# Remove 'id' from the records since it's auto-incremented
-records = [{k: v for k, v in row.items() if k != 'id'} for row in df.to_dict(orient="records")]
-
+# 6️⃣ Helper function to convert numpy/NaN types
 def convert_value(value):
-    """Convert numpy types to native Python types"""
+    """Convert numpy types to native Python types and NaN → None"""
     if value is None:
+        return None
+    if isinstance(value, float) and math.isnan(value):
         return None
     if hasattr(value, "item"):  # numpy.int64, numpy.float64
         return value.item()
     return value
 
-# 5️⃣ Insert rows in continuous loop
+# 7️⃣ Continuous insertion loop
 for row in itertools.cycle(records):
     try:
         # Add current timestamp in IST
         ist = timezone(timedelta(minutes=330))
         current_timestamp = datetime.now(ist).strftime('%Y-%m-%dT%H:%M:%SZ')
         row['timestamp'] = current_timestamp
-        
+
+        # Convert all values properly
         values = [convert_value(v) for v in row.values()]
         placeholders = ", ".join(["%s"] * len(values))
-        # Exclude 'id' from the column list
         columns = ", ".join(row.keys())
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
 
@@ -636,6 +641,5 @@ for row in itertools.cycle(records):
     except Exception as e:
         print(f"❌ Error inserting data: {e} at {time.strftime('%H:%M:%S')}")
 
-    # 6️⃣ Wait 3 minutes before next insert
+    # Wait 3 minutes before next insert
     time.sleep(180)
-    
