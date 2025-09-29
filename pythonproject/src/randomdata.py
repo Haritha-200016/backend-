@@ -576,6 +576,7 @@ while True:
     time.sleep(1)
 
 
+'''
 
 
 
@@ -584,7 +585,6 @@ while True:
 
 
 
-this is for local refal dummy data from excel loop
 import time
 import itertools
 from src.dbconnection import get_mariadb_connection
@@ -635,71 +635,6 @@ for row in itertools.cycle(records):
 
     except Exception as e:
         print(f"❌ Error inserting data: {e} at {time.strftime('%H:%M:%S')}")
-
-    # 6️⃣ Wait 3 minutes before next insert
-    time.sleep(180)'''
-
-
-
-
-
-
-import time
-import itertools
-import os
-import pandas as pd
-from datetime import datetime, timezone, timedelta
-from src.dbconnection import get_mariadb_connection
-
-# 1️⃣ Paths (Linux-friendly)
-base_dir = os.path.dirname(os.path.abspath(__file__))
-excel_path = os.path.join(base_dir, "src", "realtime.xlsx")
-
-# Check if the file exists
-if not os.path.exists(excel_path):
-    raise FileNotFoundError(f"Excel file not found: {excel_path}")
-
-# Read Excel file
-df = pd.read_excel(excel_path)
-
-# 2️⃣ Database connection
-db = get_mariadb_connection()
-cursor = db.cursor()
-
-# 3️⃣ Table name
-table = "realtime_sensor_data"
-
-# 4️⃣ Clean DataFrame and exclude 'id' from insertion
-df = df.where(pd.notnull(df), None)  # Replace NaN → None
-records = [{k: v for k, v in row.items() if k != 'id'} for row in df.to_dict(orient="records")]
-
-def convert_value(value):
-    """Convert numpy types to native Python types"""
-    if value is None:
-        return None
-    if hasattr(value, "item"):  # numpy.int64, numpy.float64
-        return value.item()
-    return value
-
-# 5️⃣ Insert rows continuously
-for row in itertools.cycle(records):
-    try:
-        # Add current timestamp in IST
-        ist = timezone(timedelta(minutes=330))
-        current_timestamp = datetime.now(ist).strftime('%Y-%m-%dT%H:%M:%SZ')
-        row['timestamp'] = current_timestamp
-
-        values = [convert_value(v) for v in row.values()]
-        placeholders = ", ".join(["%s"] * len(values))
-        columns = ", ".join(row.keys())
-        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-
-        cursor.execute(sql, values)
-        db.commit()
-        print(f"✅ Inserted row at {datetime.now(ist).strftime('%H:%M:%S')} → {values}")
-
-    except Exception as e:
-        print(f"❌ Error inserting data at {datetime.now(ist).strftime('%H:%M:%S')}: {e}")
 
     # 6️⃣ Wait 3 minutes before next insert
     time.sleep(180)
