@@ -592,7 +592,7 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 
 # 1️⃣ Read Excel file
-file_path = r"src\realtime.xlsx"
+file_path = r"src\real_time.xlsx"
 df = pd.read_excel(file_path)
 
 # 2️⃣ Database connection
