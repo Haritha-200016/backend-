@@ -638,3 +638,4 @@ for row in itertools.cycle(records):
 
     # 6️⃣ Wait 3 minutes before next insert
     time.sleep(180)
+    
