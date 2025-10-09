@@ -39,10 +39,14 @@ app.post('/signin', insert.signin);
 //app.post('/getDashboard', insert.getDashboard);
 //app.post('/getDashboardDetails', insert.getDashboardDetails);
 app.post('/forgot-password', insert.forgotPassword);
-app.post('/api/sensor-data', insert.receiveSensorData);
 //app.get('/update-status', insert.updateStatus);
 app.get('/fetch-dashboard-data', insert.fetchDashboardData);
+app.post('/api/sensor-data', insert.receiveSensorData);
 //app.get('/fetch-continuous-data', insert.fetchContinousData);
+app.post('/insert-realtime-data', insert.insertRealtimeData);
+
+//app.post('/receive-ShockSensorData', insert.receiveShockSensorData);
+
 
 
 

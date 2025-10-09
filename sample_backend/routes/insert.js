@@ -508,8 +508,8 @@ module.exports = {
     });
   });
 }*/
-//this is all sector and company 
-fetchDashboardData: (req, res) => {
+//this is all sector and company working featch finel function
+/*fetchDashboardData: (req, res) => {
   const { sector, company, region } = req.query;
 
   if (!company || !region) {
@@ -519,7 +519,7 @@ fetchDashboardData: (req, res) => {
   // ✅ Adjusted query (sector is optional depending on schema)
   const sensorQuery = `
     SELECT s.*
-    FROM sensor_data s
+    FROM dummy s
     JOIN devices d ON s.device_id = d.device_id
     JOIN regions r ON d.region_id = r.region_id
     WHERE r.company_name = ?
@@ -546,84 +546,271 @@ fetchDashboardData: (req, res) => {
       data: sensorResults
     });
   });
-}
-/*fetchDashboardData: (req, res) => {
-  const { company, sector } = req.query;
+}*/
+/*this will print real time data in console but in app.ja keep post
+fetchDashboardData: (req, res) => {
+  // Extract data from the POST request body
+  const { latitude, longitude, gps_status, z_axis, movement } = req.body;
 
-  if (!company || !sector) {
-    return res.status(400).json({ error: 'Company and sector are required' });
+  // Validate required fields
+  if (!latitude || !longitude || !gps_status || !z_axis || !movement) {
+    return res.status(400).json({ error: 'Missing required fields: latitude, longitude, gps_status, z_axis, or movement' });
   }
 
-  // Queries
-  const minerQuery = `
-    SELECT *
-    FROM continuous_miner
-    ORDER BY log_timestamp DESC
-    LIMIT 10;
+  // Current date and time in IST
+  const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const timestamp = new Date().toISOString();
+
+  // Print to console
+  console.log(`📡 Real-time Data Received at ${now} IST:`);
+  console.log(`- Latitude: ${latitude}`);
+  console.log(`- Longitude: ${longitude}`);
+  console.log(`- GPS Status: ${gps_status}`);
+  console.log(`- Z-axis: ${z_axis} g`);
+  console.log(`- Movement Status: ${movement}`);
+  console.log('------------------------');
+
+  // Return a success response
+  res.json({
+    status: 'success',
+    timestamp,
+    data: {
+      latitude,
+      longitude,
+      gps_status,
+      z_axis,
+      movement
+    }
+  });
+}*/
+  insertRealtimeData: (req, res) => {
+  const { device_id, equipment_name, latitude, longitude, gps_status, z_axis, movement } = req.body;
+
+  if (!device_id || !equipment_name || !latitude || !longitude || !gps_status || !z_axis || !movement) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // --- Fuel calculation ---
+  const baselineKmpl = 7;   // baseline: 7 km/litre
+  const k = 1.5;            // sensitivity constant (adjust as needed)
+
+  // Convert baseline to L/100km
+  const FC0 = 100 / baselineKmpl;
+
+  // Assume z_axis = slope angle in degrees from sensor
+  const thetaRad = (z_axis * Math.PI) / 180; 
+  const gradient = Math.sin(thetaRad);
+
+  // Apply formula → fuel consumption in L/100km
+  const fuelConsumption = FC0 * (1 + k * gradient);
+
+  // --- Insert into DB ---
+  const query = `
+    INSERT INTO realtime_sensor_data
+    (device_id, equipment_name, latitude, longitude, gps_status, z_axis, movement, fuel_consumption_l_per_100km, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW());
   `;
 
-  const sensorQuery = `
-    SELECT *
-    FROM sensor_data
-    ORDER BY timestamp DESC
-    LIMIT 10;
+  db.query(
+    query,
+    [
+      device_id,
+      equipment_name,
+      latitude,
+      longitude,
+      gps_status,
+      z_axis,
+      movement,
+      fuelConsumption
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("❌ Error inserting real-time data:", err.sqlMessage || err);
+        return res.status(500).json({ error: "Database insert error" });
+      }
+      console.log(
+        `✅ Realtime data inserted for device ${device_id} (${equipment_name}), FuelCons=${fuelConsumption.toFixed(2)} L/100km`
+      );
+      res.json({
+        status: "success",
+        inserted_id: result.insertId,
+        fuel_consumption: fuelConsumption
+      });
+    }
+  );
+},
+receiveSensorData: (req, res) => {
+  const { device_id, temperature, humidity, dust } = req.body;
+
+  if (!device_id || temperature === undefined || humidity === undefined || dust === undefined) {
+    return res.status(400).json({ error: 'Missing required sensor data' });
+  }
+
+  const insertQuery = `
+    INSERT INTO dummy (device_id, temperature, humidity, dust, timestamp)
+    VALUES (?, ?, ?, ?, NOW())
   `;
 
-  // Run first query (continuous_miner)
-  db.query(minerQuery, (err, minerResults) => {
+  db.query(insertQuery, [device_id, temperature, humidity, dust], (err, result) => {
     if (err) {
-      console.error('❌ Error fetching continuous_miner data:', err.sqlMessage || err);
-      return res.status(500).json({ error: 'Database error while getting continuous_miner data' });
+      console.error("❌ Error inserting dummy data:", err.sqlMessage || err);
+      return res.status(500).json({ error: 'SQL insert failed' });
     }
 
-    // Run second query (sensor_data)
-    db.query(sensorQuery, (err, sensorResults) => {
+    res.status(201).json({
+      message: 'Sensor data stored successfully',
+      id: result.insertId,
+      device_id
+    });
+  });
+}, 
+fetchDashboardData: (req, res) => {
+  const { company, region } = req.query;
+
+  // 1️⃣ Validate required parameters
+  if (!company || !region) {
+    return res.status(400).json({ error: 'Company and region are required' });
+  }
+
+  // 2️⃣ Get devices for this company + region
+  const deviceQuery = `
+    SELECT d.device_id
+    FROM devices d
+    JOIN regions r ON d.region_id = r.region_id
+    WHERE r.company_name = ?
+      AND r.region_name = ?
+  `;
+
+  const params = [company, region];
+
+  db.query(deviceQuery, params, (err, deviceResults) => {
+    if (err) {
+      console.error("❌ Error fetching devices:", err.sqlMessage || err);
+      return res.status(500).json({ error: "Database error while fetching devices" });
+    }
+
+    if (deviceResults.length === 0) {
+      return res.status(404).json({ error: "No devices found for this company/region" });
+    }
+
+    const deviceIds = deviceResults.map(d => d.device_id);
+
+    // 3️⃣ Fetch latest sensor data for these devices
+    const placeholders = deviceIds.map(() => "?").join(",");
+    const sensorQuery = `
+      SELECT *
+      FROM dummy
+      WHERE device_id IN (${placeholders})
+      ORDER BY timestamp DESC
+      LIMIT 6
+    `;
+
+    db.query(sensorQuery, deviceIds, (err, sensorResults) => {
       if (err) {
-        console.error('❌ Error fetching sensor_data:', err.sqlMessage || err);
-        return res.status(500).json({ error: 'Database error while getting sensor_data' });
+        console.error("❌ Error fetching sensor data:", err.sqlMessage || err);
+        return res.status(500).json({ error: "Database error while fetching sensor data" });
       }
 
-      // Send combined response
+      if (sensorResults.length === 0) {
+        return res.status(404).json({ error: "No sensor data found for this region" });
+      }
+
+      // 4️⃣ Return response
       res.json({
-        status: 'success',
-        sector,
+        status: "success",
         company,
-        devices: 'all',
-        continuous_miner: minerResults,  // ✅ first table data
-        sensor_data: sensorResults       // ✅ second table data
+        region,
+        devices: deviceIds,
+        data: sensorResults
       });
     });
   });
-}*/
+},
+receiveShockSensorData: (req, res) => {
+    const shockValue = req.body.shock_value;
+    if (shockValue !== undefined) {
+      console.log(`Received shock value: ${shockValue}`);
+      res.status(200).json({ message: "Shock data received", value: shockValue });
+    } else {
+      console.log("No shock value received in request.");
+      res.status(400).json({ error: "Missing shock_value in request body" });
+    }
+  }
+/*duplicate function so u can remove 
+fetchDashboardData: (req, res) => {
+  const { company, region } = req.query;
 
-/*fetchContinousData: (req, res) => {
-  const { company, sector } = req.query;
-
-  if (!company || !sector) {
-    return res.status(400).json({ error: 'Company and sector are required' });
+  if (!company || !region) {
+    return res.status(400).json({ error: 'Company and region are required' });
   }
 
-  // Fetch latest 50 sensor readings for everyone (ignore company/device filtering)
-  const minerQuery = `
-    SELECT *
-    FROM continuous_miner
-    ORDER BY log_timestamp DESC
-    LIMIT 10;
+  const deviceQuery = `
+    SELECT d.device_id
+    FROM devices d
+    JOIN regions r ON d.region_id = r.region_id
+    WHERE r.company_name = ?
+      AND r.region_name = ?
   `;
 
-  db.query(minerQuery, (err, minerResults) => {
-    if (err) {
-      console.error('❌ Error fetching continuous_miner data:', err.sqlMessage || err);
-      return res.status(500).json({ error: 'Database error while getting continuous_miner data' });
-    }
-    
+  const params = [company, region];
 
-    res.json({
-      status: 'success',
-      sector,
-      company,
-      devices: 'all',
-      data: minerResults
+  db.query(deviceQuery, params, (err, deviceResults) => {
+    if (err) {
+      console.error("❌ Error fetching devices:", err.sqlMessage || err);
+      return res.status(500).json({ error: "Database error while fetching devices" });
+    }
+
+    if (deviceResults.length === 0) {
+      return res.status(404).json({ error: "No devices found for this company/region" });
+    }
+
+    const deviceIds = deviceResults.map(d => d.device_id);
+    const placeholders = deviceIds.map(() => "?").join(",");
+
+    // Fetch real-time sensor data
+    const sensorQuery = `
+      SELECT *
+      FROM realtime_sensor_data
+      WHERE device_id IN (${placeholders})
+      ORDER BY timestamp DESC
+      LIMIT 6
+    `;
+
+    db.query(sensorQuery, deviceIds, (err, sensorResults) => {
+      if (err) {
+        console.error("❌ Error fetching sensor data:", err.sqlMessage || err);
+        return res.status(500).json({ error: "Database error while fetching sensor data" });
+      }
+
+      // Fetch dummy data
+      const dummyQuery = `
+        SELECT *
+        FROM dummy
+        WHERE device_id IN (${placeholders})
+        ORDER BY timestamp DESC
+        LIMIT 6
+      `;
+
+      db.query(dummyQuery, deviceIds, (err, dummyResults) => {
+        if (err) {
+          console.error("❌ Error fetching dummy data:", err.sqlMessage || err);
+          return res.status(500).json({ error: "Database error while fetching dummy data" });
+        }
+
+        // Combine both datasets
+        const combinedData = {
+          realtime: sensorResults,
+          dummy: dummyResults
+        };
+
+        res.json({
+          status: "success",
+          company,
+          region,
+          devices: deviceIds,
+          data: combinedData
+        });
+      });
     });
   });
 }*/
